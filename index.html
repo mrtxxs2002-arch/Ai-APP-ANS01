@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI รวมพลัง</title>
+<meta name="description" content="ถาม AI ฟรีหลายตัวพร้อมกัน แล้วสรุปเป็นคำตอบเดียว">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AI รวมพลัง">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --bg:#f5f6fa;--surface:#ffffff;--surface2:#eef0f6;--text:#151722;--muted:#646a7d;--border:#dde1ec;
+  --accent:#4f46e5;--accent-soft:#e8e7fd;--on-accent:#ffffff;
+  --ok-bg:#e6f6ed;--ok:#11703f;--warn-bg:#fff2dc;--warn:#8f5200;--info-bg:#e9f0fb;--info:#2c4f86;--err:#c0362c;
+  --code-bg:#f0f1f6;--shadow:0 1px 2px rgba(20,22,40,.06),0 2px 8px rgba(20,22,40,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1117;--surface:#181b24;--surface2:#222634;--text:#e8eaf2;--muted:#9aa0b4;--border:#2c3142;
+    --accent:#8b85ff;--accent-soft:#2a2850;--on-accent:#0f1117;
+    --ok-bg:#12291d;--ok:#6fd49a;--warn-bg:#2e2310;--warn:#f3b65a;--info-bg:#16233a;--info:#93b6ef;--err:#ff8a7f;
+    --code-bg:#11141c;--shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1117;--surface:#181b24;--surface2:#222634;--text:#e8eaf2;--muted:#9aa0b4;--border:#2c3142;
+  --accent:#8b85ff;--accent-soft:#2a2850;--on-accent:#0f1117;
+  --ok-bg:#12291d;--ok:#6fd49a;--warn-bg:#2e2310;--warn:#f3b65a;--info-bg:#16233a;--info:#93b6ef;--err:#ff8a7f;
+  --code-bg:#11141c;--shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Sukhumvit Set","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
+  display:flex;flex-direction:column;height:100dvh;overflow:hidden;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+.muted{color:var(--muted)}
+
+/* header */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top) + 8px) 16px 10px;flex:none}
+.top{display:flex;align-items:center;gap:10px;max-width:760px;margin:0 auto}
+.top h1{font-size:18px;margin:0;flex:1;display:flex;align-items:center;gap:8px}
+.top h1 img{width:28px;height:28px;border-radius:7px}
+.chip{border:1px solid var(--border);background:var(--surface2);border-radius:999px;padding:4px 10px;font-size:13px}
+.icon-btn{border:none;background:var(--surface2);border-radius:10px;width:38px;height:38px;font-size:18px}
+.modes{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:12px;max-width:760px;margin:10px auto 0}
+.modes button{flex:1;border:none;background:none;border-radius:9px;padding:7px 4px;font-size:14px;color:var(--muted)}
+.modes button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow)}
+.mode-desc{max-width:760px;margin:6px auto 0;font-size:12.5px;color:var(--muted);text-align:center}
+
+/* log */
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+#log{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:22px;padding-bottom:8px}
+.q{display:flex;justify-content:flex-end}
+.bubble{background:var(--accent);color:var(--on-accent);padding:10px 14px;border-radius:18px 18px 4px 18px;max-width:85%;white-space:pre-wrap;word-wrap:break-word}
+.turn{display:flex;flex-direction:column;gap:10px}
+.ans-label{font-size:12.5px;color:var(--muted);margin:2px 2px 0}
+.answers{display:flex;flex-direction:column;gap:6px}
+details.ans{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+details.ans summary{list-style:none;display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:14.5px}
+details.ans summary::-webkit-details-marker{display:none}
+details.ans summary::after{content:"›";margin-left:4px;color:var(--muted);transition:transform .15s;font-size:18px;line-height:1}
+details.ans[open] summary::after{transform:rotate(90deg)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.st{margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+details.ans .body{padding:0 14px 12px;border-top:1px solid var(--border)}
+.final{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.final-head{font-weight:700;font-size:15px;margin-bottom:4px}
+.final-head .muted{font-weight:400;font-size:13px}
+.note{border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14.5px;display:flex;flex-direction:column;gap:2px}
+.note span{font-size:13.5px;opacity:.95}
+.note.ok{background:var(--ok-bg);color:var(--ok)}
+.note.warn{background:var(--warn-bg);color:var(--warn)}
+.note.info{background:var(--info-bg);color:var(--info)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--border);background:var(--surface2);border-radius:10px;padding:8px 12px;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.mini{border:1px solid var(--border);background:none;border-radius:8px;padding:3px 10px;font-size:13px;color:var(--muted)}
+.err{color:var(--err)}
+.spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* markdown */
+.md,.body{overflow-wrap:anywhere}
+.md p,.body p{margin:.55em 0}
+.md h3,.md h4,.md h5,.md h6,.body h3,.body h4,.body h5,.body h6{margin:.9em 0 .3em;font-size:1.02em}
+.md ul,.md ol,.body ul,.body ol{padding-left:1.4em;margin:.4em 0}
+.md li,.body li{margin:.2em 0}
+code{background:var(--code-bg);border-radius:5px;padding:1px 5px;font:13.5px/1.5 ui-monospace,Menlo,Consolas,monospace}
+pre{background:var(--code-bg);border-radius:10px;padding:10px 12px;overflow-x:auto}
+pre code{background:none;padding:0}
+blockquote{margin:.5em 0;padding-left:10px;border-left:3px solid var(--border);color:var(--muted)}
+.tbl{overflow-x:auto;margin:.5em 0}
+table{border-collapse:collapse;font-size:14px;min-width:100%}
+th,td{border:1px solid var(--border);padding:5px 8px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+hr{border:none;border-top:1px solid var(--border)}
+
+/* welcome */
+.welcome{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px}
+.welcome h2{margin:0 0 6px;font-size:19px}
+.welcome ol{padding-left:1.3em}
+.examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.examples button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px}
+
+/* composer */
+footer{flex:none;background:var(--surface);border-top:1px solid var(--border);padding:10px 12px calc(env(safe-area-inset-bottom) + 10px)}
+.composer{max-width:760px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;resize:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:20px;padding:9px 14px;font:inherit;font-size:16px;max-height:160px;min-height:42px;outline:none}
+textarea:focus{border-color:var(--accent)}
+#send{width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:var(--on-accent);font-size:18px;flex:none}
+#send:disabled{opacity:.4}
+
+/* settings */
+dialog{border:none;padding:0;background:var(--bg);color:var(--text);width:100%;max-width:640px;height:100%;max-height:100%;margin:auto}
+@media (min-width:700px){dialog{height:auto;max-height:90dvh;border-radius:16px}}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.dlg{display:flex;flex-direction:column;height:100%;max-height:inherit}
+.dlg-head{display:flex;align-items:center;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;background:var(--surface);border-bottom:1px solid var(--border)}
+.dlg-head h2{flex:1;margin:0;font-size:18px}
+.dlg-body{overflow-y:auto;padding:14px 16px calc(env(safe-area-inset-bottom) + 24px)}
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.sec h3{margin:0 0 4px;font-size:15.5px}
+.sec > p{margin:0 0 8px;font-size:13.5px;color:var(--muted)}
+.prov{padding:10px 0;border-top:1px solid var(--border)}
+.prov:first-of-type{border-top:none}
+.prov-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.prov-head b{font-size:15px}
+.prov-head small{color:var(--muted);font-size:12.5px;flex:1}
+.prov-head a{font-size:13.5px;white-space:nowrap}
+.keyrow{display:flex;gap:6px;margin-top:6px}
+.keyrow input{flex:1;min-width:0}
+input[type=text],input[type=password],select{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:9px;padding:8px 10px;font:inherit;font-size:16px}
+.test-out{font-size:13px;margin-top:4px;min-height:1em}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border)}
+.mrow:first-of-type{border-top:none}
+.mrow .info{flex:1;min-width:0}
+.mrow .info div{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:11px;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+.badge.paid{background:var(--warn-bg);color:var(--warn)}
+.badge.nokey{background:var(--surface2);color:var(--muted)}
+.switch{position:relative;width:46px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:var(--border);border-radius:999px;transition:.2s}
+.switch span::after{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + span{background:var(--accent)}
+.switch input:checked + span::after{transform:translateX(18px)}
+details.adv summary{font-size:13.5px;color:var(--muted);cursor:pointer;margin-top:8px}
+.adv-row{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13.5px}
+.adv-row label{width:78px;flex:none}
+.adv-row input{flex:1;min-width:0;font-size:14px;padding:6px 8px}
+
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;max-width:calc(100% - 32px);text-align:center;z-index:50}
+#toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1><img src="icon-192.png" alt="">AI รวมพลัง</h1>
+    <button class="chip" id="readyChip" data-act="settings">0 AI พร้อม</button>
+    <button class="icon-btn" data-act="settings" aria-label="ตั้งค่า">⚙️</button>
+  </div>
+  <div class="modes" role="group" aria-label="โหมด">
+    <button data-mode="council">🤝 ประชุมรวม</button>
+    <button data-mode="compare">⚖️ เทียบ</button>
+    <button data-mode="quick">⚡ ด่วน</button>
+  </div>
+  <div class="mode-desc" id="modeDesc"></div>
+</header>
+
+<main id="scroller"><div id="log"></div></main>
+
+<footer>
+  <form class="composer" id="form">
+    <textarea id="input" rows="1" placeholder="พิมพ์คำถามหรือคำสั่ง…" enterkeyhint="send"></textarea>
+    <button id="send" type="submit" aria-label="ส่ง">➤</button>
+  </form>
+</footer>
+
+<dialog id="settings">
+  <div class="dlg">
+    <div class="dlg-head"><h2>⚙️ ตั้งค่า</h2><button class="btn primary" data-act="close-settings">เสร็จ</button></div>
+    <div class="dlg-body" id="settingsBody"></div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ---------- config ---------- */
+const PROVIDERS = {
+  google:     {name:"Google AI Studio", hint:"สำหรับ Gemini", keyUrl:"https://aistudio.google.com/apikey"},
+  groq:       {name:"Groq", hint:"สำหรับ Llama, GPT-OSS, Qwen", keyUrl:"https://console.groq.com/keys", url:"https://api.groq.com/openai/v1/chat/completions"},
+  openrouter: {name:"OpenRouter", hint:"สำหรับ DeepSeek (และ ChatGPT/Claude ถ้าเติมเงิน)", keyUrl:"https://openrouter.ai/keys", url:"https://openrouter.ai/api/v1/chat/completions"},
+  mistral:    {name:"Mistral", hint:"สำหรับ Mistral", keyUrl:"https://console.mistral.ai/api-keys", url:"https://api.mistral.ai/v1/chat/completions"}
+};
+const MODELS = [
+  {id:"gemini",   name:"Gemini",   provider:"google",     model:"gemini-flash-latest",       on:true,  color:"#3b82f6", desc:"Google · ภาษาไทยดีมาก"},
+  {id:"llama",    name:"Llama",    provider:"groq",       model:"llama-3.3-70b-versatile",   on:true,  color:"#8b5cf6", desc:"Meta · เร็วมาก"},
+  {id:"gptoss",   name:"GPT-OSS",  provider:"groq",       model:"openai/gpt-oss-120b",       on:true,  color:"#14b8a6", desc:"OpenAI รุ่นเปิด · ฟรี"},
+  {id:"qwen",     name:"Qwen",     provider:"groq",       model:"qwen/qwen3-32b",            on:true,  color:"#f97316", desc:"Alibaba · เก่งโค้ด"},
+  {id:"deepseek", name:"DeepSeek", provider:"openrouter", model:"auto:deepseek",             on:true,  color:"#06b6d4", desc:"เก่งคิดวิเคราะห์ · เลือกรุ่นฟรีอัตโนมัติ"},
+  {id:"mistral",  name:"Mistral",  provider:"mistral",    model:"mistral-small-latest",      on:true,  color:"#eab308", desc:"ฝรั่งเศส · เร็ว"},
+  {id:"gpt",      name:"ChatGPT",  provider:"openrouter", model:"openai/gpt-5-mini",         on:false, color:"#059669", desc:"ต้องเติมเครดิต OpenRouter", paid:true},
+  {id:"claude",   name:"Claude",   provider:"openrouter", model:"anthropic/claude-sonnet-4.5", on:false, color:"#d97757", desc:"ต้องเติมเครดิต OpenRouter", paid:true}
+];
+const MODE_DESC = {
+  council:"ทุกตัวตอบ → หัวหน้าทีมสรุปเป็นคำตอบเดียว + บอกว่าข้อมูลพอหรือควรส่งต่อ",
+  compare:"ดูคำตอบของทุกตัวเรียงกันเพื่อเปรียบเทียบเอง",
+  quick:"ถามตัวเดียว (ตัวผู้สรุป) เร็วที่สุด ประหยัดโควตา"
+};
+const TIMEOUT_MS = 90000;
+
+/* ---------- storage ---------- */
+const LS = "aiCouncil.v1.";
+function load(k, d){ try{ const v = localStorage.getItem(LS+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem(LS+k, JSON.stringify(v)); }catch(e){} }
+const settings = Object.assign({keys:{}, models:{}, judge:"gemini", mode:"council"}, load("settings", {}));
+let turns = load("turns", []).map(t => t.status === "running" ? Object.assign(t, {status:"error", error:"ถูกหยุดกลางคัน"}) : t);
+function saveSettings(){ save("settings", settings); refreshHeader(); }
+function persist(){ save("turns", turns.slice(-30)); }
+
+const cfg = m => { const o = settings.models[m.id] || {}; return Object.assign({}, m, {on: o.on ?? m.on, model: (o.model || "").trim() || m.model}); };
+const hasKey = m => !!(settings.keys[m.provider] || "").trim();
+const activeModels = () => MODELS.map(cfg).filter(m => m.on && hasKey(m));
+const colorOf = id => (MODELS.find(m => m.id === id) || {}).color || "#888";
+
+/* ---------- utils ---------- */
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+let toastTimer;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
+function today(){ return new Date().toLocaleDateString("th-TH", {dateStyle:"long"}); }
+
+/* tiny markdown renderer (escapes everything first) */
+function inline(s){
+  const codes = [];
+  s = s.replace(/`([^`]+)`/g, (m, c) => { codes.push("<code>" + c + "</code>"); return "\u0001" + (codes.length - 1) + "\u0001"; });
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\*)/g, "$1<em>$2</em>");
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s.replace(/\u0001(\d+)\u0001/g, (m, i) => codes[+i]);
+}
+function md(src){
+  if(!src) return "";
+  const blocks = [];
+  src = String(src).replace(/\r/g, "").replace(/```[^\n]*\n?([\s\S]*?)(?:```|$)/g, (m, code) => {
+    blocks.push("<pre><code>" + esc(code.replace(/\n$/, "")) + "</code></pre>");
+    return "\n\u0000" + (blocks.length - 1) + "\u0000\n";
+  });
+  const lines = esc(src).split("\n");
+  let out = "", para = [], list = null, table = [];
+  const fPara = () => { if(para.length){ out += "<p>" + para.map(inline).join("<br>") + "</p>"; para = []; } };
+  const fList = () => { if(list){ out += `<${list.t}${list.start > 1 ? ` start="${list.start}"` : ""}>` + list.items.map(i => "<li>" + inline(i) + "</li>").join("") + `</${list.t}>`; list = null; } };
+  const fTable = () => {
+    if(!table.length) return;
+    const rows = table.filter(r => !/^\|?[\s:|-]+\|?$/.test(r) || !r.includes("-"))
+      .map(r => r.replace(/^\||\|$/g, "").split("|").map(c => inline(c.trim())));
+    out += '<div class="tbl"><table>' + rows.map((r, i) => "<tr>" + r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join("") + "</tr>").join("") + "</table></div>";
+    table = [];
+  };
+  const fAll = () => { fPara(); fList(); fTable(); };
+  for(const line of lines){
+    let m;
+    if((m = line.match(/^\u0000(\d+)\u0000$/))){ fAll(); out += blocks[+m[1]]; continue; }
+    if(/^\s*\|.*\|\s*$/.test(line)){ fPara(); fList(); table.push(line.trim()); continue; } else fTable();
+    if((m = line.match(/^(#{1,6})\s+(.*)$/))){ fAll(); const l = Math.min(m[1].length + 2, 6); out += `<h${l}>${inline(m[2])}</h${l}>`; continue; }
+    if(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)){ fAll(); out += "<hr>"; continue; }
+    if((m = line.match(/^\s*[-*•+]\s+(.*)$/))){ fPara(); if(!list || list.t !== "ul"){ fList(); list = {t:"ul", items:[]}; } list.items.push(m[1]); continue; }
+    if((m = line.match(/^\s*(\d+)[.)]\s+(.*)$/))){ fPara(); if(!list || list.t !== "ol"){ fList(); list = {t:"ol", items:[], start:+m[1]}; } list.items.push(m[2]); continue; }
+    if((m = line.match(/^&gt;\s?(.*)$/))){ fAll(); out += "<blockquote>" + inline(m[1]) + "</blockquote>"; continue; }
+    if(!line.trim()){ fPara(); fList(); continue; }
+    if(list && /^\s{2,}/.test(line)){ list.items[list.items.length - 1] += " " + line.trim(); continue; }
+    fList(); para.push(line);
+  }
+  fAll();
+  return out;
+}
+
+/* ---------- AI calls ---------- */
+const orCache = {};
+async function resolveOpenRouter(hint, signal){
+  if(orCache[hint]) return orCache[hint];
+  const r = await fetch("https://openrouter.ai/api/v1/models", {signal});
+  const j = await r.json();
+  const score = id => (/chat|v3/.test(id) ? 2 : 0) - (/distill/.test(id) ? 3 : 0);
+  const ids = (j.data || []).map(x => x.id).filter(id => id.endsWith(":free") && id.toLowerCase().includes(hint));
+  if(!ids.length) throw new Error(`ตอนนี้ OpenRouter ไม่มี ${hint} รุ่นฟรี — ปิดตัวนี้ หรือใส่ชื่อรุ่นเองในตั้งค่า`);
+  ids.sort((a, b) => score(b) - score(a));
+  return (orCache[hint] = ids[0]);
+}
+function explain(status, data, raw){
+  let msg = (data && data.error && (data.error.message || (typeof data.error === "string" ? data.error : ""))) || (data && data.message) || raw.slice(0, 200);
+  let base = "เกิดข้อผิดพลาด";
+  if(status === 401 || status === 403) base = "API key ไม่ถูกต้อง หรือ key ไม่มีสิทธิ์ใช้รุ่นนี้";
+  else if(status === 429) base = "ใช้เกินโควตาฟรีแล้ว รอสักพักหรือพรุ่งนี้ค่อยลองใหม่";
+  else if(status === 402) base = "เครดิตไม่พอ (รุ่นนี้ต้องเสียเงิน)";
+  else if(status === 404 || (status === 400 && /model/i.test(msg))) base = "ไม่พบรุ่นนี้ (ผู้ให้บริการอาจเปลี่ยนชื่อรุ่น) — แก้ชื่อรุ่นในตั้งค่า";
+  else if(status >= 500) base = "เซิร์ฟเวอร์ของผู้ให้บริการมีปัญหาชั่วคราว";
+  return `${base} (${status}: ${String(msg).slice(0, 160)})`;
+}
+async function callModel(m, messages, outer){
+  const key = (settings.keys[m.provider] || "").trim();
+  if(!key) throw new Error("ยังไม่ได้ใส่ API key ของ " + PROVIDERS[m.provider].name);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  const onAbort = () => ctl.abort();
+  if(outer){ if(outer.aborted) ctl.abort(); else outer.addEventListener("abort", onAbort); }
+  let model = m.model, res, raw;
+  try{
+    if(m.provider === "google"){
+      const sys = messages.filter(x => x.role === "system").map(x => x.content).join("\n\n");
+      const body = {
+        contents: messages.filter(x => x.role !== "system").map(x => ({role: x.role === "assistant" ? "model" : "user", parts:[{text:x.content}]})),
+        generationConfig: {temperature:0.7}
+      };
+      if(sys) body.systemInstruction = {parts:[{text:sys}]};
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method:"POST", headers:{"Content-Type":"application/json", "x-goog-api-key":key}, body:JSON.stringify(body), signal:ctl.signal});
+    }else{
+      if(model.startsWith("auto:")) model = await resolveOpenRouter(model.slice(5), ctl.signal);
+      const headers = {"Content-Type":"application/json", "Authorization":"Bearer " + key};
+      if(m.provider === "openrouter"){ headers["HTTP-Referer"] = location.origin; headers["X-Title"] = "AI Council"; }
+      res = await fetch(PROVIDERS[m.provider].url, {method:"POST", headers, body:JSON.stringify({model, messages, temperature:0.7}), signal:ctl.signal});
+    }
+    raw = await res.text();
+  }catch(e){
+    if(outer && outer.aborted) throw new Error("หยุดแล้ว");
+    if(ctl.signal.aborted) throw new Error(`รอนานเกิน ${TIMEOUT_MS / 1000} วินาที`);
+    throw new Error(e.message && e.message.startsWith("ตอนนี้") ? e.message : "เชื่อมต่อไม่ได้ — ตรวจอินเทอร์เน็ต หรือผู้ให้บริการไม่อนุญาตให้เรียกจากเว็บ");
+  }finally{
+    clearTimeout(timer);
+    if(outer) outer.removeEventListener("abort", onAbort);
+  }
+  let data = null;
+  try{ data = JSON.parse(raw); }catch(e){}
+  if(!res.ok) throw new Error(explain(res.status, data, raw || ""));
+  let text = m.provider === "google"
+    ? ((data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || []).filter(p => !p.thought).map(p => p.text || "").join("")
+    : ((data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "");
+  text = String(text).replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  if(!text){
+    const why = data && ((data.candidates && data.candidates[0] && data.candidates[0].finishReason) || (data.promptFeedback && data.promptFeedback.blockReason));
+    throw new Error("ไม่ได้รับคำตอบ" + (why ? ` (${why})` : ""));
+  }
+  return {text, model};
+}
+
+/* ---------- prompts ---------- */
+const VERDICT_RULES = `หลังคำตอบ ให้เขียนบรรทัดสุดท้ายตามรูปแบบนี้เท่านั้น (เลือกอย่างใดอย่างหนึ่ง):
+VERDICT: ENOUGH | <เหตุผลสั้นๆ ภาษาไทย ไม่เกิน 1 ประโยค>
+VERDICT: ESCALATE | <เหตุผลสั้นๆ ภาษาไทย ไม่เกิน 1 ประโยค>
+
+ใช้ ESCALATE เมื่อมีข้อใดข้อหนึ่ง:
+- คำตอบจาก AI แต่ละตัวขัดแย้งกันในสาระสำคัญ และตัดสินไม่ได้ว่าอันไหนถูก
+- คำถามต้องการข้อมูลล่าสุด ข่าว ราคา หรือเหตุการณ์ปัจจุบัน (AI เหล่านี้ค้นเว็บไม่ได้)
+- งานซับซ้อนมาก เช่น โค้ดยาวหลายส่วน วิเคราะห์เอกสารยาว หรืองานเขียนที่ต้องการคุณภาพสูงมาก
+- เรื่องสุขภาพ กฎหมาย หรือการเงิน ที่ผู้ใช้จะนำไปตัดสินใจสำคัญ (ระบุในเหตุผลว่าควรปรึกษาผู้เชี่ยวชาญด้วย)
+- คุณไม่มั่นใจในความถูกต้องของคำตอบ
+กรณีอื่นทั้งหมดให้ใช้ ENOUGH`;
+const ANSWER_SYS = () => `คุณเป็นผู้ช่วย AI ที่ตอบได้ถูกต้องและเป็นประโยชน์ ตอบเป็นภาษาเดียวกับที่ผู้ใช้ถาม (ถามภาษาไทยให้ตอบภาษาไทย) กระชับแต่ครบถ้วน ใช้ Markdown ได้ ถ้าไม่แน่ใจหรือข้อมูลอาจไม่เป็นปัจจุบันให้บอกตรงๆ วันนี้คือ ${today()}`;
+const JUDGE_SYS = () => `คุณคือ "หัวหน้าทีม AI" ทำหน้าที่ตรวจสอบคำตอบจาก AI หลายตัว แล้วเขียนคำตอบสุดท้ายที่ถูกต้องและดีที่สุดให้ผู้ใช้ ตอบเป็นภาษาเดียวกับคำถามของผู้ใช้ ใช้ Markdown ได้ วันนี้คือ ${today()}\n\n${VERDICT_RULES}`;
+const clip = (s, n) => s.length > n ? s.slice(0, n) + "\n…(ตัดให้สั้นลง)" : s;
+function judgePrompt(q, answers){
+  return `คำถามของผู้ใช้:\n${q}\n\nคำตอบจาก AI แต่ละตัว:\n\n` +
+    answers.map(a => `### ${a.name}\n${clip(a.text, 6000)}`).join("\n\n") +
+    `\n\nงานของคุณ:\n1. เขียน "คำตอบสุดท้าย" ที่ดีที่สุดให้ผู้ใช้ รวมจุดเด่น แก้จุดที่ผิด ไม่ต้องเล่าว่าตัวไหนตอบอะไร ยกเว้นตอนที่คำตอบขัดกันในเรื่องสำคัญให้บอกสั้นๆ\n2. ปิดท้ายด้วยบรรทัด VERDICT ตามรูปแบบที่กำหนด`;
+}
+function parseVerdict(text){
+  const re = /^[\s>*_`]*VERDICT\s*[:：]\s*\**\s*(ENOUGH|ESCALATE)\**\s*[|:\-–—]?\s*(.*)$/gim;
+  let m, last = null;
+  while((m = re.exec(text))) last = m;
+  if(!last) return {body:text.trim(), verdict:null, reason:""};
+  const body = (text.slice(0, last.index) + text.slice(last.index + last[0].length)).trim();
+  return {body, verdict:last[1].toUpperCase(), reason:last[2].replace(/[*_`]+\s*$/, "").trim()};
+}
+function historyMessages(){
+  const out = [];
+  for(const t of turns.filter(t => t.status === "done").slice(-3)){
+    const a = t.final || ((t.answers.find(x => x.status === "ok") || {}).text) || "";
+    if(!a) continue;
+    out.push({role:"user", content:clip(t.q, 1500)}, {role:"assistant", content:clip(a, 1500)});
+  }
+  return out;
+}
+function judgeCandidates(models){
+  const order = [];
+  const add = m => { if(m && !order.includes(m)) order.push(m); };
+  add(models.find(m => m.id === settings.judge));
+  add(models.find(m => m.id === "gemini"));
+  models.filter(m => !m.paid).forEach(add);
+  models.forEach(add);
+  return order;
+}
+function buildHandoff(t){
+  let s = `ช่วยตอบคำถามนี้ให้ถูกต้องและดีที่สุด\n\nคำถาม:\n${t.q}\n`;
+  const ok = (t.answers || []).filter(a => a.status === "ok");
+  if(t.final || ok.length){
+    s += `\nด้านล่างคือคำตอบเบื้องต้นจาก AI ฟรีหลายตัว (อาจมีจุดผิดหรือข้อมูลเก่า) ใช้เป็นข้อมูลประกอบ ช่วยตรวจจุดที่ผิด แล้วให้คำตอบสุดท้ายที่ถูกต้อง\n`;
+    if(t.reason && t.verdict === "ESCALATE") s += `\nเหตุผลที่ส่งต่อ: ${t.reason}\n`;
+    if(t.final) s += `\n[บทสรุปเบื้องต้น]\n${clip(t.final, 3000)}\n`;
+    if(t.mode !== "quick") for(const a of ok) s += `\n[${a.name}]\n${clip(a.text, 2000)}\n`;
+  }
+  return s;
+}
+
+/* ---------- rendering ---------- */
+const log = $("#log"), scroller = $("#scroller");
+const nodes = new Map();
+function statusText(a){
+  if(a.status === "wait") return '<span class="spin"></span>กำลังคิด';
+  if(a.status === "ok") return `✓ ${(a.ms / 1000).toFixed(1)} วิ`;
+  return "✗ ใช้ไม่ได้";
+}
+function handoffBtns(t, primary){
+  const cls = primary ? "btn primary" : "btn";
+  return `<button class="${cls}" data-act="gpt" data-turn="${t.id}">ส่งต่อ ChatGPT ↗</button><button class="${cls}" data-act="claude" data-turn="${t.id}">ส่งต่อ Claude ↗</button>`;
+}
+function finalHTML(t){
+  if(t.mode === "compare"){
+    if(t.status === "running") return "";
+    return `<div class="final"><div class="note info" style="margin-top:0"><b>อยากได้คำตอบเดียว?</b><span>สลับไปโหมด 🤝 ประชุมรวม หรือส่งคำตอบทั้งหมดไปให้ ChatGPT / Claude ช่วยสรุป (ระบบจะคัดลอกข้อความให้ แล้วกดวางได้เลย)</span></div><div class="actions">${handoffBtns(t, false)}</div></div>`;
+  }
+  const head = t.mode === "quick"
+    ? `⚡ คำตอบ${t.judge ? ` <span class="muted">· ${esc(t.judge)}</span>` : ""}`
+    : `✨ คำตอบสรุป${t.judge ? ` <span class="muted">· สรุปโดย ${esc(t.judge)}</span>` : ""}`;
+  let body;
+  if(t.status === "running") body = `<p class="muted"><span class="spin"></span> ${esc(t.phase || "กำลังทำงาน…")}</p>`;
+  else if(t.status === "error") body = `<p class="err">${esc(t.error)}</p>`;
+  else body = `<div class="md">${md(t.final)}</div>`;
+  let note = "";
+  if(t.status === "done"){
+    if(t.verdict === "ENOUGH") note = `<div class="note ok"><b>✅ หมายเหตุ: ข้อมูลเพียงพอ ไม่ต้องสืบค้นต่อ</b>${t.reason ? `<span>${esc(t.reason)}</span>` : ""}</div>`;
+    else if(t.verdict === "ESCALATE") note = `<div class="note warn"><b>⚠️ หมายเหตุ: แนะนำให้ส่งต่อ ChatGPT หรือ Claude ตรวจสอบ</b>${t.reason ? `<span>${esc(t.reason)}</span>` : ""}</div>`;
+    else note = `<div class="note info"><b>ℹ️ AI ผู้สรุปไม่ได้ระบุว่าข้อมูลพอหรือไม่</b><span>ถ้าเป็นเรื่องสำคัญ ลองส่งต่อ ChatGPT หรือ Claude ตรวจสอบอีกครั้ง</span></div>`;
+  }
+  let actions = "";
+  if(t.status !== "running"){
+    actions = `<div class="actions">${t.status === "done" ? `<button class="btn" data-act="copy" data-turn="${t.id}">📋 คัดลอกคำตอบ</button>` : ""}${handoffBtns(t, t.verdict === "ESCALATE")}</div>`;
+  }
+  return `<div class="final"><div class="final-head">${head}</div>${body}${note}${actions}</div>`;
+}
+function turnHTML(t){
+  let h = `<div class="q"><div class="bubble">${esc(t.q)}</div></div>`;
+  if(t.mode !== "quick"){
+    h += `<div class="answers">`;
+    if(t.mode === "council") h += `<div class="ans-label">คำตอบจากแต่ละ AI (แตะเพื่อดู)</div>`;
+    for(const a of t.answers){
+      const open = t.open.includes(a.id);
+      let body;
+      if(a.status === "ok") body = md(a.text) + `<div class="actions" style="margin-top:6px"><button class="mini" data-act="copyans" data-turn="${t.id}" data-ans="${a.id}">คัดลอก</button>${a.model ? `<span class="muted" style="font-size:12px;align-self:center">${esc(a.model)}</span>` : ""}</div>`;
+      else if(a.status === "err") body = `<p class="err">${esc(a.err)}</p>`;
+      else body = `<p class="muted">กำลังคิด…</p>`;
+      h += `<details class="ans" data-turn="${t.id}" data-ans="${a.id}"${open ? " open" : ""}><summary><span class="dot" style="--c:${colorOf(a.id)}"></span><b>${esc(a.name)}</b><span class="st ${a.status}">${statusText(a)}</span></summary><div class="body">${body}</div></details>`;
+    }
+    h += `</div>`;
+  }
+  return h + finalHTML(t);
+}
+function nearBottom(){ return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120; }
+function scrollBottom(){ scroller.scrollTop = scroller.scrollHeight; }
+function mount(t){
+  const w = $("#welcome"); if(w) w.remove();
+  const el = document.createElement("div");
+  el.className = "turn"; el.dataset.id = t.id;
+  el.innerHTML = turnHTML(t);
+  log.appendChild(el); nodes.set(t.id, el);
+}
+function update(t){
+  const el = nodes.get(t.id); if(!el) return;
+  const stick = nearBottom();
+  el.innerHTML = turnHTML(t);
+  if(stick) scrollBottom();
+}
+function renderAll(){
+  log.innerHTML = ""; nodes.clear();
+  if(!turns.length) log.innerHTML = welcomeHTML();
+  turns.forEach(mount);
+  scrollBottom();
+}
+function welcomeHTML(){
+  const ready = activeModels().length;
+  if(!ready) return `<div class="welcome" id="welcome">
+    <h2>👋 ยินดีต้อนรับสู่ AI รวมพลัง</h2>
+    <p>แอปนี้ส่งคำถามของคุณไปให้ AI ฟรีหลายตัวตอบพร้อมกัน แล้วให้ "หัวหน้าทีม" สรุปเป็นคำตอบเดียว พร้อมหมายเหตุว่า <b>ข้อมูลเพียงพอแล้ว</b> หรือ <b>ควรส่งต่อ ChatGPT / Claude</b></p>
+    <ol><li>กด ⚙️ ตั้งค่า</li><li>กดลิงก์ "ขอ key ฟรี" ของแต่ละเจ้า สมัครแล้วคัดลอก key มาวาง</li><li>กลับมาพิมพ์คำถามได้เลย</li></ol>
+    <p class="muted">แค่ใส่ key ของ Google กับ Groq ก็ใช้ได้ 4 ตัวแล้ว (Gemini, Llama, GPT-OSS, Qwen)</p>
+    <button class="btn primary" data-act="settings">⚙️ ไปตั้งค่า</button></div>`;
+  const ex = ["อธิบายเรื่อง AI ให้เด็กเข้าใจ", "ช่วยเขียนแคปชันขายทุเรียนหมอนทอง", "วางแผนเที่ยวเชียงใหม่ 3 วัน 2 คืน", "ดอกเบี้ยทบต้นคิดยังไง ยกตัวอย่าง"];
+  return `<div class="welcome" id="welcome"><h2>พร้อมแล้ว ✨</h2><p>มี AI พร้อมใช้ ${ready} ตัว ลองถามอะไรก็ได้ หรือแตะตัวอย่าง:</p>
+    <div class="examples">${ex.map(e => `<button data-act="example">${esc(e)}</button>`).join("")}</div></div>`;
+}
+function refreshHeader(){
+  const n = activeModels().length;
+  $("#readyChip").textContent = `${n} AI พร้อม`;
+  document.querySelectorAll(".modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === settings.mode));
+  $("#modeDesc").textContent = MODE_DESC[settings.mode];
+}
+
+/* ---------- run ---------- */
+let running = null;
+function setBusy(ctl){
+  running = ctl;
+  const b = $("#send");
+  b.textContent = ctl ? "■" : "➤";
+  b.setAttribute("aria-label", ctl ? "หยุด" : "ส่ง");
+}
+async function runOne(t, m, msgs, signal, a){
+  const start = performance.now();
+  try{
+    const r = await callModel(m, msgs, signal);
+    a.status = "ok"; a.text = r.text; a.model = r.model;
+    return r.text;
+  }catch(e){
+    a.status = "err"; a.err = e.message; throw e;
+  }finally{
+    a.ms = performance.now() - start; update(t);
+  }
+}
+async function ask(q){
+  const models = activeModels();
+  if(!models.length){ toast("ยังไม่มี AI ที่พร้อมใช้ — ใส่ API key ก่อนนะ"); openSettings(); return; }
+  const mode = settings.mode;
+  const judges = judgeCandidates(models);
+  const use = mode === "quick" ? [judges[0]] : models;
+  const t = {
+    id:String(Date.now()), q, mode, status:"running",
+    phase: mode === "council" ? `รอคำตอบจาก AI ${use.length} ตัว…` : "กำลังคิด…",
+    answers: use.map(m => ({id:m.id, name:m.name, status:"wait", text:"", err:"", ms:0, model:""})),
+    open: mode === "compare" ? use.map(m => m.id) : [],
+    final:"", verdict:null, reason:"", judge:"", error:""
+  };
+  const hist = historyMessages();
+  turns.push(t); mount(t); scrollBottom();
+  const ctl = new AbortController(); setBusy(ctl);
+  try{
+    if(mode === "quick"){
+      const m = use[0]; t.judge = m.name; update(t);
+      const text = await runOne(t, m, [{role:"system", content:ANSWER_SYS() + "\n\n" + VERDICT_RULES}, ...hist, {role:"user", content:q}], ctl.signal, t.answers[0]);
+      const v = parseVerdict(text);
+      Object.assign(t, {final:v.body, verdict:v.verdict, reason:v.reason, status:"done"});
+    }else{
+      const msgs = [{role:"system", content:ANSWER_SYS()}, ...hist, {role:"user", content:q}];
+      await Promise.all(use.map((m, i) => runOne(t, m, msgs, ctl.signal, t.answers[i]).catch(() => {})));
+      if(ctl.signal.aborted) throw new Error("หยุดแล้ว");
+      const ok = t.answers.filter(a => a.status === "ok");
+      if(!ok.length) throw new Error("ไม่มี AI ตัวไหนตอบได้ — แตะดูสาเหตุของแต่ละตัวด้านบน");
+      if(mode === "council"){
+        const jm = [{role:"system", content:JUDGE_SYS()}, ...hist, {role:"user", content:judgePrompt(q, ok)}];
+        let done = false, lastErr = null;
+        for(const j of judges){
+          t.phase = `${j.name} กำลังตรวจและสรุป…`; update(t);
+          try{
+            const r = await callModel(j, jm, ctl.signal);
+            const v = parseVerdict(r.text);
+            Object.assign(t, {judge:j.name, final:v.body, verdict:v.verdict, reason:v.reason});
+            done = true; break;
+          }catch(e){ lastErr = e; if(ctl.signal.aborted) throw e; }
+        }
+        if(!done) throw new Error("สรุปไม่สำเร็จ: " + (lastErr ? lastErr.message : ""));
+      }
+      t.status = "done";
+    }
+  }catch(e){
+    t.status = "error"; t.error = e.message;
+  }finally{
+    setBusy(null); update(t); persist();
+  }
+}
+
+/* ---------- clipboard / handoff ---------- */
+function copyText(text){
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    try{ document.execCommand("copy"); }catch(e){}
+    ta.remove();
+  };
+  try{
+    if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(fallback);
+    else fallback();
+  }catch(e){ fallback(); }
+}
+const HANDOFF = {gpt:{name:"ChatGPT", url:"https://chatgpt.com/"}, claude:{name:"Claude", url:"https://claude.ai/new"}};
+
+/* ---------- settings UI ---------- */
+function renderSettings(){
+  const provs = Object.entries(PROVIDERS).map(([id, p]) => `
+    <div class="prov">
+      <div class="prov-head"><b>${esc(p.name)}</b><small>${esc(p.hint)}</small><a href="${p.keyUrl}" target="_blank" rel="noopener">ขอ key ฟรี ↗</a></div>
+      <div class="keyrow">
+        <input type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="วาง API key ที่นี่" data-key="${id}" value="${esc(settings.keys[id] || "")}">
+        <button class="btn" data-act="test" data-prov="${id}">ทดสอบ</button>
+      </div>
+      <div class="test-out" id="test-${id}"></div>
+    </div>`).join("");
+  const models = MODELS.map(cfg).map(m => `
+    <div class="mrow">
+      <span class="dot" style="--c:${m.color}"></span>
+      <div class="info"><b>${esc(m.name)}</b>${m.paid ? '<span class="badge paid">เสียเงิน</span>' : ""}${hasKey(m) ? "" : '<span class="badge nokey">ยังไม่มี key</span>'}
+        <div>${esc(m.desc)} · ${esc(PROVIDERS[m.provider].name)}</div></div>
+      <label class="switch"><input type="checkbox" data-toggle="${m.id}"${m.on ? " checked" : ""}><span></span></label>
+    </div>`).join("");
+  const judgeOpts = MODELS.map(m => `<option value="${m.id}"${settings.judge === m.id ? " selected" : ""}>${esc(m.name)}${m.paid ? " (เสียเงิน)" : ""}</option>`).join("");
+  const adv = MODELS.map(cfg).map(m => `<div class="adv-row"><label>${esc(m.name)}</label><input type="text" autocapitalize="off" spellcheck="false" data-model="${m.id}" value="${esc(m.model)}"></div>`).join("");
+  $("#settingsBody").innerHTML = `
+    <div class="sec"><h3>🔑 API key</h3>
+      <p>key ถูกเก็บไว้ในเครื่องนี้เท่านั้น สมัครฟรีได้ทุกเจ้า ไม่ต้องผูกบัตร (ยกเว้นถ้าจะใช้ ChatGPT/Claude ในแอป ต้องเติมเครดิต OpenRouter)</p>
+      ${provs}
+    </div>
+    <div class="sec"><h3>🤖 เลือก AI ที่ใช้</h3><p>ตัวที่เปิดและมี key จะถูกถามพร้อมกัน</p>${models}
+      <details class="adv"><summary>ขั้นสูง: แก้ชื่อรุ่น (ใช้เมื่อขึ้นว่า "ไม่พบรุ่นนี้")</summary>${adv}
+        <p class="muted" style="font-size:12.5px">DeepSeek ใช้ <code>auto:deepseek</code> = ให้แอปเลือกรุ่นฟรีล่าสุดเอง · เว้นว่างเพื่อกลับเป็นค่าเริ่มต้น</p></details>
+    </div>
+    <div class="sec"><h3>👑 หัวหน้าทีม (ผู้สรุป)</h3><p>ตัวที่ใช้สรุปคำตอบและบอกว่าข้อมูลพอหรือไม่ (ถ้าใช้ไม่ได้จะสลับไปตัวอื่นให้อัตโนมัติ)</p>
+      <select data-judge style="width:100%">${judgeOpts}</select></div>
+    <div class="sec"><h3>🔒 ความเป็นส่วนตัว</h3>
+      <p>ข้อความที่คุณถามจะถูกส่งไปยังผู้ให้บริการ AI ที่เปิดใช้ บริการแบบฟรีอาจนำข้อมูลไปพัฒนา AI ของเขา — อย่าพิมพ์ข้อมูลส่วนตัว รหัสผ่าน หรือความลับ</p>
+      <button class="btn" data-act="clear">🗑️ ล้างประวัติแชท</button></div>`;
+}
+function openSettings(){ renderSettings(); const d = $("#settings"); if(d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+function closeSettings(){ const d = $("#settings"); if(d.close) d.close(); else d.removeAttribute("open"); }
+$("#settings").addEventListener("close", () => { refreshHeader(); if(!turns.length) renderAll(); });
+$("#settingsBody").addEventListener("input", e => {
+  const el = e.target;
+  if(el.dataset.key){ settings.keys[el.dataset.key] = el.value.trim(); saveSettings(); }
+  else if(el.dataset.model){ (settings.models[el.dataset.model] ||= {}).model = el.value.trim(); saveSettings(); }
+});
+$("#settingsBody").addEventListener("change", e => {
+  const el = e.target;
+  if(el.dataset.toggle){ (settings.models[el.dataset.toggle] ||= {}).on = el.checked; saveSettings(); }
+  else if(el.hasAttribute("data-judge")){ settings.judge = el.value; saveSettings(); }
+  else if(el.dataset.key){ renderSettings(); }
+});
+async function testProvider(pid){
+  const out = $("#test-" + pid);
+  const m = MODELS.map(cfg).find(x => x.provider === pid && !x.paid);
+  out.innerHTML = '<span class="spin"></span> กำลังทดสอบ…'; out.className = "test-out muted";
+  try{
+    const r = await callModel(m, [{role:"user", content:'ตอบสั้นๆ แค่คำว่า "พร้อมใช้งาน"'}]);
+    out.textContent = `✓ ใช้ได้ (${m.name}: ${r.text.slice(0, 40)})`; out.className = "test-out"; out.style.color = "var(--ok)";
+  }catch(e){ out.textContent = "✗ " + e.message; out.className = "test-out err"; out.style.color = ""; }
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act],[data-mode]");
+  if(!b) return;
+  if(b.dataset.mode){ settings.mode = b.dataset.mode; saveSettings(); return; }
+  const act = b.dataset.act;
+  const t = b.dataset.turn ? turns.find(x => x.id === b.dataset.turn) : null;
+  if(act === "settings") openSettings();
+  else if(act === "close-settings") closeSettings();
+  else if(act === "test") testProvider(b.dataset.prov);
+  else if(act === "example"){ $("#input").value = b.textContent; send(); }
+  else if(act === "clear"){ if(confirm("ล้างประวัติแชททั้งหมด?")){ turns = []; persist(); renderAll(); closeSettings(); toast("ล้างแล้ว"); } }
+  else if(act === "copy" && t){ copyText(t.final); toast("คัดลอกคำตอบแล้ว"); }
+  else if(act === "copyans" && t){ const a = t.answers.find(x => x.id === b.dataset.ans); if(a){ copyText(a.text); toast("คัดลอกแล้ว"); } }
+  else if((act === "gpt" || act === "claude") && t){
+    const h = HANDOFF[act];
+    copyText(buildHandoff(t));
+    toast(`คัดลอกแล้ว — ไปที่ ${h.name} แล้วกดค้างในช่องพิมพ์ → วาง`);
+    setTimeout(() => window.open(h.url, "_blank", "noopener"), 350);
+  }
+});
+log.addEventListener("toggle", e => {
+  const d = e.target; if(!d.matches || !d.matches("details.ans")) return;
+  const t = turns.find(x => x.id === d.dataset.turn); if(!t) return;
+  const id = d.dataset.ans;
+  t.open = t.open.filter(x => x !== id);
+  if(d.open) t.open.push(id);
+}, true);
+
+const input = $("#input");
+function autosize(){ input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
+input.addEventListener("input", autosize);
+const isTouch = matchMedia("(pointer: coarse)").matches;
+input.addEventListener("keydown", e => {
+  if(e.key === "Enter" && !e.shiftKey && !isTouch && !e.isComposing){ e.preventDefault(); send(); }
+});
+function send(){
+  if(running){ running.abort(); return; }
+  const q = input.value.trim(); if(!q) return;
+  input.value = ""; autosize(); input.blur();
+  ask(q);
+}
+$("#form").addEventListener("submit", e => { e.preventDefault(); send(); });
+
+refreshHeader();
+renderAll();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
